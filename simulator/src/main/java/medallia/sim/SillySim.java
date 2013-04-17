@@ -1,12 +1,13 @@
 package medallia.sim;
 
-import express.web.test.DumpSlugCompleteLayout.Field;
-import ibs.test.SimulatorUtil.FieldPacker;
-import ibs.test.SlugLayoutSimulator.FieldLayoutSimulator;
-import ibs.test.SlugLayoutSimulator.RecordLayoutSimulator;
-import ibs.test.SlugLayoutSimulator.SimpleRecordLayoutSimulator;
-import ibs.test.SlugLayoutSimulator.SimulatorFactory;
-import tiny.CollUtils;
+import com.google.common.collect.Ordering;
+import medallia.runner.Field;
+import medallia.runner.SimulatorUtil.FieldPacker;
+import medallia.runner.SlugLayoutSimulator;
+import medallia.runner.SlugLayoutSimulator.FieldLayoutSimulator;
+import medallia.runner.SlugLayoutSimulator.RecordLayoutSimulator;
+import medallia.runner.SlugLayoutSimulator.SimpleRecordLayoutSimulator;
+import medallia.runner.SlugLayoutSimulator.SimulatorFactory;
 
 import java.util.BitSet;
 import java.util.Comparator;
@@ -40,12 +41,12 @@ public class SillySim {
 
 		@Override
 		protected List<Field> getFields() {
-			List<Field> sorted = CollUtils.sortedCopy(fields, new Comparator<Field>() {
+			List<Field> sorted = Ordering.from(new Comparator<Field>() {
 				@Override
 				public int compare(Field o1, Field o2) {
 					return Integer.compare(o1.size, o2.size);
 				}
-			});
+			}).sortedCopy(fields);
 
 			FieldPacker packer = new FieldPacker();
 			for (Field field : sorted) {
@@ -70,7 +71,7 @@ public class SillySim {
 	}
 
 	/**
-	 * Factory for initializing {@link ibs.test.SillySim.SillyRecordLayoutSimulator}s.
+	 * Factory for initializing {@link SillyRecordLayoutSimulator}s.
 	 */
 	public static final SimulatorFactory FACTORY = new SimulatorFactory() {
 		@Override

@@ -4,14 +4,8 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import express.web.test.DumpSlugCompleteLayout;
-import express.web.test.DumpSlugCompleteLayout.CompanyLayout;
-import express.web.test.DumpSlugCompleteLayout.DatasetLayout;
-import express.web.test.DumpSlugCompleteLayout.Field;
-import express.web.test.DumpSlugCompleteLayout.Layout;
-import ibs.test.SimulatorUtil.RecordPacker;
-import tiny.Empty;
-import tiny.Format;
+import com.google.common.collect.Maps;
+import medallia.runner.SimulatorUtil.RecordPacker;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,7 +22,8 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
-import static common.Common.unused;
+import static medallia.runner.SimulatorUtil.toSi;
+import static medallia.runner.SimulatorUtil.unused;
 
 /**
  * Simulator Framework for alternative slug record loading strategies.
@@ -42,7 +37,6 @@ import static common.Common.unused;
  *     <li>A {@link RecordLayoutSimulator} that packs records into segments</li>
  *     <li>A {@link SimulatorFactory} that creates field and record layout simulators for a run on each dataset</li>
  * </ul>
- * For an example, check {@link SillySim} for a simple simulator or {@link CorrelationSim} for one a bit more sophisticated.
  */
 public class SlugLayoutSimulator {
 
@@ -69,11 +63,6 @@ public class SlugLayoutSimulator {
 	 * <ul>
 	 * <li>Simulator is initialized with a given list of fields and layouts.
 	 * <li>{@link #processRecord(int)} is called once per record.
-	 * <li>{@link #flush()} may be called multiple times during loading, and is
-	 * guaranteed to be called at the end.
-	 * <li>After all loading is done, {@link #getFields()} is called to
-	 * determine any new field ordering needed, and {@link #getSegments()} is
-	 * called to fetch the new segments.
 	 * </ul>
 	 * <p>
 	 * As an example, assume we have two fields, A and B, and that we have three
@@ -103,7 +92,6 @@ public class SlugLayoutSimulator {
 	 * getSegments();
 	 * </pre>
 	 * 
-	 * @see DumpSlugCompleteLayout
 	 */
 	protected abstract static class SimulatorBase implements RecordProcessor {
 		/**
@@ -260,7 +248,7 @@ public class SlugLayoutSimulator {
 		@Override
 		public String toString() {
 			return String.format("%s rows (%s layouts), %s fields (%s columns in %s segments): %.1f%% used-data, %.1f%% used-columns, %s",
-					totalRows, totalLayouts, fields, columns, segments, usedBitsPercent, usedColumnsPercent, Format.toSi(usedBytes));
+					totalRows, totalLayouts, fields, columns, segments, usedBitsPercent, usedColumnsPercent, toSi(usedBytes));
 		}
 	}
 
@@ -382,16 +370,16 @@ public class SlugLayoutSimulator {
 	 * Fetch data from file and parse
 	 */
 	public static void main(String[] args) throws IOException, ClassNotFoundException {
-		final Iterable<Path> paths = (args.length == 0) ? Collections.singleton(DumpSlugCompleteLayout.DUMP_PATH) : Iterables.transform(Arrays.asList(args), new Function<String, Path>() {			@Override
-			public Path apply(String fileName) {
+		final Iterable<Path> paths = Iterables.transform(Arrays.asList(args), new Function<String, Path>() {
+			@Override public Path apply(String fileName) {
 				return Paths.get(fileName);
 			}
 		});
 
-		final List<SimulatorFactory> sims = ImmutableList.of(SillySim.FACTORY, DoNothingSim.FACTORY, CorrelationSim.WAIT_AND_FIX_FACTORY, CorrelationSim.SPLIT_FACTORY );
+		final List<SimulatorFactory> sims = ImmutableList.of();
 
 		// Collect total bytes used by each simulator to report an overall winner
-		final Map<SimulatorFactory, Long> totalUsedBytes = Empty.hashMap();
+		final Map<SimulatorFactory, Long> totalUsedBytes = Maps.newHashMap();
 		for (SimulatorFactory sim : sims) {
 			totalUsedBytes.put(sim, 0L);
 		}
@@ -442,7 +430,7 @@ public class SlugLayoutSimulator {
 				bytesUsed = usedBytes;
 				winner = name;
 			}
-			System.out.printf("** %s - total bytes used: %s%n", name, Format.toSi(usedBytes));
+			System.out.printf("** %s - total bytes used: %s%n", name, toSi(usedBytes));
 		}
 		System.out.printf(" * * * And the winner is: %s * * * %n", winner);
 	}
