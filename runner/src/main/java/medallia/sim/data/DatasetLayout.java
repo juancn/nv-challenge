@@ -1,4 +1,4 @@
-package medallia.runner;
+package medallia.sim.data;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

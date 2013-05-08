@@ -1,13 +1,9 @@
 package medallia.sim;
 
 import com.google.common.collect.Ordering;
-import medallia.runner.Field;
-import medallia.runner.SimulatorUtil.FieldPacker;
-import medallia.runner.SlugLayoutSimulator;
-import medallia.runner.SlugLayoutSimulator.FieldLayoutSimulator;
-import medallia.runner.SlugLayoutSimulator.RecordLayoutSimulator;
-import medallia.runner.SlugLayoutSimulator.SimpleRecordLayoutSimulator;
-import medallia.runner.SlugLayoutSimulator.SimulatorFactory;
+import medallia.sim.data.Field;
+import medallia.util.FieldPacker;
+import medallia.util.SimpleRecordLayoutSimulator;
 
 import java.util.BitSet;
 import java.util.Comparator;
@@ -40,7 +36,7 @@ public class SillySim {
 		}
 
 		@Override
-		protected List<Field> getFields() {
+		public List<Field> getFields() {
 			List<Field> sorted = Ordering.from(new Comparator<Field>() {
 				@Override
 				public int compare(Field o1, Field o2) {

@@ -1,28 +1,23 @@
-package medallia.runner;
-import com.google.common.collect.ImmutableList;
+package medallia.util;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import medallia.runner.SimulatorUtil.LayoutStatProcessor.ColumnLayoutStats;
-import medallia.runner.SlugLayoutSimulator.RecordProcessor;
+import medallia.sim.RecordProcessor;
+import medallia.sim.data.Field;
+import medallia.util.SimulatorUtil.LayoutStatProcessor.ColumnLayoutStats;
 
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.FieldPosition;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-
-import static com.google.common.base.Preconditions.checkArgument;
 
 /**
- * Collection of assorted utilities to assist in building {@link SlugLayoutSimulator.RecordLayoutSimulator}s and {@link SlugLayoutSimulator.FieldLayoutSimulator}s
+ * Collection of assorted utilities to assist in building {@link medallia.sim.RecordLayoutSimulator}s and {@link medallia.sim.FieldLayoutSimulator}s
  */
+@SuppressWarnings("unused")
 public class SimulatorUtil {
 
 	/** @return the number of used columns in a particular field arrangement */
@@ -90,11 +85,16 @@ public class SimulatorUtil {
 	@SuppressWarnings("UnusedParameters")
 	public static void unused(Object o) {}
 
+	/** Performs an unchecked cast to the target type */
+	@SuppressWarnings("unchecked")
+	public static <T> T uncheckedCast(Object obj) {
+		return (T) obj;
+	}
 	/**
 	 * A {@link RecordProcessor} that collects frequency statistics about processed record layouts.
 	 * This class also provides methods to cluster layouts based on usage statistics.
 	 */
-	public static class LayoutStatProcessor implements SlugLayoutSimulator.RecordProcessor {
+	public static class LayoutStatProcessor implements RecordProcessor {
 		private final int[] freq;
 
 		/** Creates a new layout stat collector */
@@ -161,134 +161,6 @@ public class SimulatorUtil {
 			public String toString() {
 				return String.format("%s:%s", layoutIdx, recordCount);
 			}
-		}
-	}
-
-	/**
-	 * A {@link SlugLayoutSimulator.RecordProcessor} that multiplexes calls to {@link #processRecord(int)}
-	 * on different instances of {@link SimulatorUtil.RecordPacker}, depending on the layoutIdx of the
-	 * record being processed.
-	 * <p/>
-	 * This class receives an array of {@link RecordPacker}, the array should have one element per valid layout index.
-	 * <p/>
-	 * The {@link #processRecord(int)} method will delegate the actual record processing to the RecordPacker
-	 * corresponding to the layoutIdx of the record being processed.
-	 * On each call to {@link #flush()} all the underlying {@link RecordPacker}s will be flushed once per instance.
-	 */
-	public static class MultiplexingPacker implements SlugLayoutSimulator.RecordProcessor {
-		private final RecordPacker[] packersByLayout;
-
-		/**
-		 * Creates a new multiplexing packer.
-		 * @param packersByLayout array mapping layoutIdx to {@link SimulatorUtil.RecordPacker}
-		 */
-		public MultiplexingPacker(RecordPacker[] packersByLayout) {
-			this.packersByLayout = packersByLayout;
-		}
-
-		@Override
-		public void processRecord(int layoutIdx) {
-			packersByLayout[layoutIdx].processRecord(layoutIdx);
-		}
-
-		/** Flushes the all the underlying {@link RecordPacker}s once.*/
-		public void flush() {
-			for (RecordPacker packer : ImmutableSet.copyOf(Arrays.asList(packersByLayout))) {
-				packer.flush();
-			}
-		}
-
-		/** @return list of segments (flush should have been called by now) */
-		public List<int[]> getSegments() {
-			final List<int[]> result = Lists.newArrayList();
-			for (RecordPacker packer : ImmutableSet.copyOf(Arrays.asList(packersByLayout))) {
-				result.addAll(packer.getSegments());
-			}
-			return result;
-		}
-	}
-
-	/** Packs fields in columns in the order they're passed */
-	public static class FieldPacker {
-		private int column;
-		private int bitsUsed;
-		private final List<Field> fields = Lists.newArrayList();
-		private final Set<Field> alreadyPacked = Sets.newHashSet();
-
-		/** Packs the specified field, adding a column if needed. */
-		public FieldPacker pack(Field field) {
-			checkArgument(!packed(field), "Field '%s' already packed", field.name);
-			if (!fitsInCurrentColumn(field)) {
-				column++;
-				bitsUsed = 0;
-			}
-			bitsUsed += field.size;
-			fields.add(new Field(field, column));
-			alreadyPacked.add(field);
-			return this;
-		}
-
-		/** @return true if packing the field will not cause a new column to be allocated */
-		public boolean fitsInCurrentColumn(Field field) {
-			return field.size + bitsUsed <= 32;
-		}
-
-		/** @return true if the field has already been packed */
-		public boolean packed(Field field) {
-			return alreadyPacked.contains(field);
-		}
-
-		/** Allocates a new column if the current one has at least one bit occupied */
-		public FieldPacker newColumn() {
-			if (bitsUsed > 0) {
-				++column;
-				bitsUsed = 0;
-			}
-			return this;
-		}
-
-		/** @return a list of fields packed by this FieldPacker*/
-		public List<Field> getFields() {
-			return fields;
-		}
-	}
-
-	/** Simple record packer that packs records snugly into segments until the segment is full */
-	public static class RecordPacker implements RecordProcessor {
-		protected List<int[]> segments = new ArrayList<>();
-		protected int[] current;
-		protected int currentIdx;
-		protected final int segmentSize;
-
-		/**
-		 * Initialize a segment packer
-		 * @param segmentSize number of rows per segment
-		 */
-		public RecordPacker(int segmentSize) {
-			this.segmentSize = segmentSize;
-		}
-
-		@Override
-		public void processRecord(int layoutIdx) {
-			if (current == null || currentIdx >= current.length) {
-				flush();
-				current = new int[segmentSize];
-			}
-			current[currentIdx++ ] = layoutIdx;
-		}
-
-		/**
-		 * Flush layout any remaining changes.
-		 */
-		public void flush() {
-			if (current != null)
-				segments.add(Arrays.copyOf(current, currentIdx));
-			current = null;
-			currentIdx = 0;
-		}
-
-		public List<int[]> getSegments() {
-			return segments;
 		}
 	}
 
@@ -401,7 +273,7 @@ public class SimulatorUtil {
 	 * Extension of DecimalFormat, where double numbers are compensated for double math artifacts before formatting.
 	 * We apply an Epsilon value depending on the {@link java.math.RoundingMode}.
 	 */
-	public static class DecimalFormatEpsilon extends DecimalFormat {
+	private static class DecimalFormatEpsilon extends DecimalFormat {
 
 		/** see {@link DecimalFormat#DecimalFormat()} */
 		protected DecimalFormatEpsilon() {

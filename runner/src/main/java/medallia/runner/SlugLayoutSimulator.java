@@ -5,7 +5,15 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
-import medallia.runner.SimulatorUtil.RecordPacker;
+import medallia.sim.RecordLayoutSimulator;
+import medallia.sim.data.CompanyLayout;
+import medallia.sim.data.DatasetLayout;
+import medallia.sim.data.Field;
+import medallia.sim.data.Layout;
+import medallia.util.SimulatorUtil;
+import medallia.sim.FieldLayoutSimulator;
+import medallia.sim.RecordProcessor;
+import medallia.sim.SimulatorFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,15 +23,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
-import static medallia.runner.SimulatorUtil.toSi;
-import static medallia.runner.SimulatorUtil.unused;
+import static medallia.util.SimulatorUtil.toSi;
+import static medallia.util.SimulatorUtil.unused;
 
 /**
  * Simulator Framework for alternative slug record loading strategies.
@@ -33,195 +40,13 @@ import static medallia.runner.SimulatorUtil.unused;
  * <p/>
  * A simulator is composed of three classes:
  * <ul>
- *     <li>A {@link FieldLayoutSimulator} (optional) that returns a new field-column mapping</li>
- *     <li>A {@link RecordLayoutSimulator} that packs records into segments</li>
- *     <li>A {@link SimulatorFactory} that creates field and record layout simulators for a run on each dataset</li>
+ *     <li>A {@link medallia.sim.FieldLayoutSimulator} (optional) that returns a new field-column mapping</li>
+ *     <li>A {@link medallia.sim.RecordLayoutSimulator} that packs records into segments</li>
+ *     <li>A {@link medallia.sim.SimulatorFactory} that creates field and record layout simulators for a run on each dataset</li>
  * </ul>
  */
 public class SlugLayoutSimulator {
 
-	/** Basic interface for classes that need to process records */
-	public interface RecordProcessor {
-		/**
-		 * Process a single record.
-		 * @param layoutIdx Layout index in 'layouts' this record represents.
-		 */
-		void processRecord(int layoutIdx);
-	}
-
-
-	/**
-	 * Base class for a simulator. All Simulators should extend
-	 * {@link RecordLayoutSimulator} or {@link FieldLayoutSimulator}.
-	 * <p>
-	 * This simulator uses the term layout id. A layout id is a placeholder for
-	 * a unique record layout, and the specific layout can be looked up in the
-	 * {@link #layouts} member. Layout #0 is special, and is used to represent
-	 * an empty row.
-	 * <p>
-	 * The flow of simulation is as follows:
-	 * <ul>
-	 * <li>Simulator is initialized with a given list of fields and layouts.
-	 * <li>{@link #processRecord(int)} is called once per record.
-	 * </ul>
-	 * <p>
-	 * As an example, assume we have two fields, A and B, and that we have three
-	 * records R1, R2 and R3.
-	 * 
-	 * <pre>
-	 * R1: A="Hello", B=3
-	 * R2: A="World", B=4
-	 * R3: B=5
-	 * </pre>
-	 * 
-	 * The simulator code doesn't have (or care) what the values actually are,
-	 * it only cares if it they are set, which indicates it has to reserve space
-	 * to store them. In this case, we would end up with 2 fields (A and B), and
-	 * 2 layouts. Layout 1 would be (A set, B set) and layout 2 would be (B
-	 * set).
-	 * <p>
-	 * The flow of execution is therefore likely to be:
-	 * 
-	 * <pre>
-	 * Constructor()
-	 * processRecord(1);
-	 * processRecord(1);
-	 * processRecord(2);
-	 * flush();
-	 * getFields();
-	 * getSegments();
-	 * </pre>
-	 * 
-	 */
-	protected abstract static class SimulatorBase implements RecordProcessor {
-		/**
-		 * The mapping between a layout id and which fields contain values.
-		 */
-		protected final BitSet[] layouts;
-
-		/**
-		 * Field definitions on input
-		 */
-		protected final List<Field> fields;
-
-		/**
-		 * Initialize constructor with given layout and fields.
-		 */
-		public SimulatorBase(BitSet[] layouts, List<Field> fields) {
-			this.layouts = layouts;
-			this.fields = fields;
-		}
-
-		/**
-		 * Load a single record into the dataset
-		 * 
-		 * @param layoutIdx Layout index in {@link #layouts} this record
-		 *            represents.
-		 */
-		@Override
-		public abstract void processRecord(int layoutIdx);
-
-	}
-	
-	/**
-	 * Base class for simulators. The meat of the logic is in
-	 * {@link SimulatorBase}.
-	 */
-	public abstract static class RecordLayoutSimulator extends SimulatorBase {
-		/**
-		 * Initialize simulator with given layout and fields.
-		 */
-		public RecordLayoutSimulator(BitSet[] layouts, List<Field> fields) {
-			super(layouts, fields);
-		}
-
-		/**
-		 * @return Completed layout of segments
-		 */
-		protected abstract List<int[]> getSegments();
-
-		/**
-		 * Flush layout. This is used to signify a publishing point during
-		 * loading (all currently {@link #processRecord(int)} records must be
-		 * visible in a call to {@link #getSegments()}) and at the end.
-		 */
-		public void flush() {
-			// Optional
-		}
-	}
-
-	/**
-	 * Base class for field layout simulators. These can be used to pre-analyze the dataset,
-	 * but their primary purpose is to change column allocation for fields.
-	 * Field layout simulators. typically only see a subset of the actual data.
-	 */
-	public abstract static class FieldLayoutSimulator extends SimulatorBase {
-		/**
-		 * Initialize the simulator with given layout and fields.
-		 */
-		public FieldLayoutSimulator(BitSet[] layouts, List<Field> fields) {
-			super(layouts, fields);
-		}
-
-		/**
-		 * This can be overridden to change the column of field definitions. Be
-		 * aware that the order of fields should never change, only the column
-		 * they are allocated in.
-		 */
-		protected List<Field> getFields() {
-			return fields;
-		}
-	}
-
-	/**
-	 * Creation of field and record layout simulators.
-	 */
-	public interface SimulatorFactory {
-		/**
-		 * Create a {@link FieldLayoutSimulator}. If this returns non-null, the
-		 * simulator will be given a subset of records to calculate optimal column
-		 * allocation for the fields.
-		 */
-		FieldLayoutSimulator createFieldLayoutSimulator(BitSet[] layouts, List<Field> fields);
-
-		/**
-		 * Crate a simulator for the given layout and fields. If {@link #createFieldLayoutSimulator}
-		 * returned non-null, the field layout built by the {@link FieldLayoutSimulator}
-		 * will be given here.
-		 */
-		RecordLayoutSimulator createRecordLayoutSimulator(BitSet[] layouts, List<Field> fields);
-
-		/** @return the name of this simulator (used for reporting) */
-		String getName();
-	}
-
-
-	/** Just pack segments as they come in the order they come */
-	public static class SimpleRecordLayoutSimulator extends RecordLayoutSimulator {
-		private final RecordPacker packer = new RecordPacker(SEGMENT_SIZE);
-
-		/**
-		 * Initialize simulator with given layout and fields.
-		 */
-		public SimpleRecordLayoutSimulator(BitSet[] layouts, List<Field> fields) {
-			super(layouts, fields);
-		}
-
-		@Override
-		protected List<int[]> getSegments() {
-			return packer.getSegments();
-		}
-
-		@Override
-		public void flush() {
-			packer.flush();
-		}
-
-		@Override
-		public void processRecord(int layoutIdx) {
-			packer.processRecord(layoutIdx);
-		}
-	}
 
 	/** Simulator analysis result */
 	static class Analysis {
