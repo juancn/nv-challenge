@@ -18,5 +18,6 @@
 	<modules>
 		<module>runner</module>
 		<module>simulator</module>
+		<module>migrator</module>
 	</modules>
 </project>
