@@ -4,15 +4,20 @@ import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import express.web.test.DumpSlugCompleteLayout;
 
+import java.io.BufferedInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 public class LayoutMigrator {
 
@@ -27,13 +32,17 @@ public class LayoutMigrator {
 			final DumpSlugCompleteLayout.Layout srcLayout;
 
 			try (InputStream in = Files.newInputStream(path);
-				 InputStream gzip = new GZIPInputStream(in);
+				 InputStream gzip = new GZIPInputStream(new BufferedInputStream(in));
 				 ObjectInputStream ois = new ObjectInputStream(gzip)) {
 				srcLayout = (DumpSlugCompleteLayout.Layout) ois.readObject();
 			}
 
-			Layout anonymous = anonymize(srcLayout);
-			System.out.println("migrated = " + anonymous);
+			final Layout anonymous = anonymize(srcLayout);
+			try (OutputStream os = Files.newOutputStream(path.resolveSibling(path.getFileName() + ".anon"));
+				 OutputStream gzip = new GZIPOutputStream(os);
+				 ObjectOutputStream oos = new ObjectOutputStream(gzip)) {
+				oos.writeObject(anonymous);
+			}
 		}
 	}
 
