@@ -1,7 +1,7 @@
 package medallia.util;
 
+import medallia.runner.SimulatorRunner;
 import medallia.sim.data.Field;
-import medallia.runner.SlugLayoutSimulator;
 import medallia.sim.RecordLayoutSimulator;
 
 import java.util.BitSet;
@@ -9,7 +9,7 @@ import java.util.List;
 
 /** Just pack segments as they come in the order they come */
 public class SimpleRecordLayoutSimulator extends RecordLayoutSimulator {
-	private final RecordPacker packer = new RecordPacker(SlugLayoutSimulator.SEGMENT_SIZE);
+	private final RecordPacker packer = new RecordPacker(SimulatorRunner.SEGMENT_SIZE);
 
 	/**
 	 * Initialize simulator with given layout and fields.

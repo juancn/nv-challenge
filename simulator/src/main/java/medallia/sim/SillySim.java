@@ -1,6 +1,7 @@
 package medallia.sim;
 
 import com.google.common.collect.Ordering;
+import medallia.runner.SimulatorRunner;
 import medallia.sim.data.Field;
 import medallia.util.FieldPacker;
 import medallia.util.SimpleRecordLayoutSimulator;
@@ -85,4 +86,8 @@ public class SillySim {
 			return "Silly";
 		}
 	};
+
+	public static void main(String[] args) throws Exception {
+		SimulatorRunner.main(FACTORY, args);
+	}
 }

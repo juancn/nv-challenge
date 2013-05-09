@@ -45,7 +45,7 @@ import static medallia.util.SimulatorUtil.unused;
  *     <li>A {@link medallia.sim.SimulatorFactory} that creates field and record layout simulators for a run on each dataset</li>
  * </ul>
  */
-public class SlugLayoutSimulator {
+public class SimulatorRunner {
 
 
 	/** Simulator analysis result */
@@ -194,14 +194,14 @@ public class SlugLayoutSimulator {
 	/**
 	 * Fetch data from file and parse
 	 */
-	public static void main(String[] args) throws IOException, ClassNotFoundException {
+	public static void main(SimulatorFactory factory, String[] args) throws IOException, ClassNotFoundException {
 		final Iterable<Path> paths = Iterables.transform(Arrays.asList(args), new Function<String, Path>() {
 			@Override public Path apply(String fileName) {
 				return Paths.get(fileName);
 			}
 		});
 
-		final List<SimulatorFactory> sims = ImmutableList.of();
+		final List<SimulatorFactory> sims = ImmutableList.of(factory);
 
 		// Collect total bytes used by each simulator to report an overall winner
 		final Map<SimulatorFactory, Long> totalUsedBytes = Maps.newHashMap();
