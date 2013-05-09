@@ -8,7 +8,7 @@ import java.util.Map;
  * Layout of Company
  */
 public class CompanyLayout implements Serializable {
-	private static final long serialVersionUID = 1L;
+	static final long serialVersionUID = 1L;
 
 	/**
 	 * Mapping from dataset name to statistics

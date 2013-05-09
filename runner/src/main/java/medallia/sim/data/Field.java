@@ -6,7 +6,7 @@ import java.io.Serializable;
  * Information about an individual field.
  */
 public class Field implements Serializable {
-	private static final long serialVersionUID = 1L;
+	static final long serialVersionUID = 1L;
 
 	/** Field name */
 	public final String name;

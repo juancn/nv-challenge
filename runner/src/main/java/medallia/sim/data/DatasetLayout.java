@@ -10,7 +10,7 @@ import java.util.List;
  * Layout for a single dataset
  */
 public class DatasetLayout implements Serializable {
-	private static final long serialVersionUID = 1L;
+	static final long serialVersionUID = 1L;
 
 	/** List of fields */
 	public Field[] fields;
