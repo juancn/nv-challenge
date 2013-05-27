@@ -2,18 +2,16 @@ package medallia.runner;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
+import medallia.sim.FieldLayoutSimulator;
 import medallia.sim.RecordLayoutSimulator;
+import medallia.sim.RecordProcessor;
+import medallia.sim.SimulatorFactory;
 import medallia.sim.data.CompanyLayout;
 import medallia.sim.data.DatasetLayout;
 import medallia.sim.data.Field;
 import medallia.sim.data.Layout;
 import medallia.util.SimulatorUtil;
-import medallia.sim.FieldLayoutSimulator;
-import medallia.sim.RecordProcessor;
-import medallia.sim.SimulatorFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,7 +22,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.zip.GZIPInputStream;
@@ -194,20 +191,16 @@ public class SimulatorRunner {
 	/**
 	 * Fetch data from file and parse
 	 */
-	public static void main(SimulatorFactory factory, String[] args) throws IOException, ClassNotFoundException {
+	public static void main(SimulatorFactory fac, String[] args) throws IOException, ClassNotFoundException {
 		final Iterable<Path> paths = Iterables.transform(Arrays.asList(args), new Function<String, Path>() {
 			@Override public Path apply(String fileName) {
 				return Paths.get(fileName);
 			}
 		});
 
-		final List<SimulatorFactory> sims = ImmutableList.of(factory);
-
-		// Collect total bytes used by each simulator to report an overall winner
-		final Map<SimulatorFactory, Long> totalUsedBytes = Maps.newHashMap();
-		for (SimulatorFactory sim : sims) {
-			totalUsedBytes.put(sim, 0L);
-		}
+		// Collect total bytes used
+		long totalUsedBytes = 0;
+		final String name = fac.getName();
 
 		for (Path path : paths) {
 			final Layout layout;
@@ -224,40 +217,17 @@ public class SimulatorRunner {
 					if (stats.segments.isEmpty())
 						continue;
 
-					long bytesUsed = Long.MAX_VALUE;
-					String best = null;
-					for (SimulatorFactory fac : sims) {
-						final String simName = fac.getName();
-						final Analysis analysis = simulateCompany(fac, stats);
+					final Analysis analysis = simulateCompany(fac, stats);
 
-						System.out.printf("%s:%s:%s %s\n", company.getKey(), dataset.getKey(), simName, analysis);
+					System.out.printf("%s:%s:%s %s\n", company.getKey(), dataset.getKey(), name, analysis);
 
-						if ( bytesUsed > analysis.usedBytes ) {
-							bytesUsed = analysis.usedBytes;
-							best = simName;
-						}
-
-						// Update total used bytes
-						totalUsedBytes.put(fac, totalUsedBytes.get(fac) + analysis.usedBytes);
-					}
-					System.out.printf(" * * * Round Winner: %s * * * %n", best);
+					// Update total used bytes
+					totalUsedBytes += analysis.usedBytes;
 				}
 			}
 		}
 
-		// Find which algorithm used the least amount of memory overall
-		long bytesUsed = Long.MAX_VALUE;
-		String winner = null;
-		for (Entry<SimulatorFactory, Long> entry : totalUsedBytes.entrySet()) {
-			final String name = entry.getKey().getName();
-			final long usedBytes = entry.getValue();
-			if ( bytesUsed > usedBytes) {
-				bytesUsed = usedBytes;
-				winner = name;
-			}
-			System.out.printf("** %s - total bytes used: %s%n", name, toSi(usedBytes));
-		}
-		System.out.printf(" * * * And the winner is: %s * * * %n", winner);
+		System.out.printf("** %s - total bytes used: %s%n", name, toSi(totalUsedBytes));
 	}
 
 	private static long[] computeLayoutCounts(DatasetLayout stats) {
