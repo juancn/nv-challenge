@@ -19,5 +19,6 @@
 		<module>runner</module>
 		<module>simulator</module>
 		<module>migrator</module>
+		<module>driver</module>
 	</modules>
 </project>
