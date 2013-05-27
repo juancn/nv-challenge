@@ -102,6 +102,6 @@ public class Submission implements SimulatorFactory {
 
 	/** Not actually called by the submission runner, useful for debugging. */
 	public static void main(String[] args) throws Exception {
-		SimulatorRunner.main(new Submission(), args);
+		SimulatorRunner.run(new Submission());
 	}
 }
