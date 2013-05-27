@@ -20,7 +20,7 @@ import java.util.List;
  * allocation. Note that this simulator would probably use less space
  * if it didn't modify the field-order, since the fields are snugly packed.
  */
-public class Submission {
+public class Submission implements SimulatorFactory {
 	/**
 	 * The field layout simulator, which does eager bit allocation for fields.
 	 */
@@ -85,28 +85,23 @@ public class Submission {
 		}
 	}
 
-	/**
-	 * Factory for initializing {@link SimpleRecordLayoutSimulator}s.
-	 */
-	public static final SimulatorFactory FACTORY = new SimulatorFactory() {
-		@Override
-		public RecordLayoutSimulator createRecordLayoutSimulator(BitSet[] layouts, List<Field> fields) {
-			return new SimpleRecordLayoutSimulator(layouts, fields);
-		}
+	@Override
+	public RecordLayoutSimulator createRecordLayoutSimulator(BitSet[] layouts, List<Field> fields) {
+		return new SimpleRecordLayoutSimulator(layouts, fields);
+	}
 
-		@Override
-		public SimpleFieldLayoutSimulator createFieldLayoutSimulator(BitSet[] layouts, List<Field> fields) {
-			return new SimpleFieldLayoutSimulator(layouts, fields);
-		}
+	@Override
+	public SimpleFieldLayoutSimulator createFieldLayoutSimulator(BitSet[] layouts, List<Field> fields) {
+		return new SimpleFieldLayoutSimulator(layouts, fields);
+	}
 
-		@Override
-		public String getName() {
-			return "Simple";
-		}
-	};
+	@Override
+	public String getName() {
+		return "Simple";
+	}
 
 	/** Not actually called by the submission runner, useful for debugging. */
 	public static void main(String[] args) throws Exception {
-		SimulatorRunner.main(FACTORY, args);
+		SimulatorRunner.main(new Submission(), args);
 	}
 }
