@@ -1,0 +1,4 @@
+Build with:
+ mvn clean package
+
+Upload simulator/target/simulator-1.0.jar
