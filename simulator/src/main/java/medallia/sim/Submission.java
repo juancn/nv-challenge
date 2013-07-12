@@ -16,9 +16,7 @@ import java.util.List;
  * This simulator simply stuffs records into a continuously growing list of
  * segments. It ends the segment on any flush.
  * <p>
- * For field layout, it sorts the fields by size, then does eager
- * allocation. Note that this simulator would probably use less space
- * if it didn't modify the field-order, since the fields are snugly packed.
+ * For field layout, it sorts the fields by size, then does eager allocation.
  */
 public class Submission implements SimulatorFactory {
 	/**
