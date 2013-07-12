@@ -142,9 +142,9 @@ public class SimulatorUtil {
 
 		/** Column layout statistics  */
 		public static class ColumnLayoutStats implements Comparable<ColumnLayoutStats>{
-			final BitSet clearColumns;
-			final int layoutIdx;
-			final int recordCount;
+			public final BitSet clearColumns;
+			public final int layoutIdx;
+			public final int recordCount;
 
 			ColumnLayoutStats(BitSet clearColumns, int layoutIdx, int recordCount) {
 				this.clearColumns = clearColumns;
