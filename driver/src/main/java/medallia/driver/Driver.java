@@ -90,7 +90,7 @@ public class Driver {
 	}
 
 	private static URLClassLoader buildClassLoader(String jarFilename) throws MalformedURLException {
-		return new URLClassLoader(new URL[]{new File(jarFilename).toURI().toURL()});
+		return new URLClassLoader(new URL[]{new File(jarFilename).toURI().toURL()}, Driver.class.getClassLoader());
 	}
 
 	private static void reportProgress(String progressFilename, double completionRatio) throws FileNotFoundException {

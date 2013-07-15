@@ -8,10 +8,10 @@ import java.util.List;
 
 /** Simple record packer that packs records snugly into segments until the segment is full */
 public class RecordPacker implements RecordProcessor {
-	protected List<int[]> segments = new ArrayList<>();
-	protected int[] current;
-	protected int currentIdx;
-	protected final int segmentSize;
+	public List<int[]> segments = new ArrayList<>();
+	public int[] current;
+	public int currentIdx;
+	public final int segmentSize;
 
 	/**
 	 * Initialize a segment packer

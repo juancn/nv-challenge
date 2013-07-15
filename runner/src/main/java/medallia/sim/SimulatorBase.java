@@ -52,12 +52,12 @@ public abstract class SimulatorBase implements RecordProcessor {
 	/**
 	 * The mapping between a layout id and which fields contain values.
 	 */
-	protected final BitSet[] layouts;
+	public final BitSet[] layouts;
 
 	/**
 	 * Field definitions on input
 	 */
-	protected final List<Field> fields;
+	public final List<Field> fields;
 
 	/**
 	 * Initialize constructor with given layout and fields.
