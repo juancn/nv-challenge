@@ -27,7 +27,7 @@ is mostly empty.
  	- get the average score grouped by 10 year age buckets
  	
  These are modelled as a series of slices (e.g. slice the cube across the age 
-dimension, use 10 year slices) and agregation operations (e.g. compute the 
+dimension, use 10 year slices) and aggregation operations (e.g. compute the 
 average of each slice).
  
  Since cubes are mostly empty, only coordinates that hold values are stored, 
@@ -48,8 +48,8 @@ have a default value if not present.
 serve as a record id and makes each point unique, but we can ignore that for 
 now.
  
- In Slug teminology, each of the cube's dimensions is a field, which has a name 
-and metadata about valid values that it can hold.
+ In Slug terminology, each of the cube's dimensions is a field, which has a 
+name and metadata about valid values that it can hold.
  
  Internally, Slug stores it's data in several segments, each segment having 
 several storage columns, and each column holding values for one or more fields:
@@ -72,7 +72,7 @@ several storage columns, and each column holding values for one or more fields:
  	
  The field to column layout is the same for all segments. Each column is an 
 integer array, and fields are packed in as little space as needed. Packing 
-colun-wise helps with adding/removing fields, and with cache locality when 
+column-wise helps with adding/removing fields, and with cache locality when 
 executing queries that do not touch many fields.
  
  Segments sizes are typically bounded between 1-64K rows per segment, rounded 
