@@ -5,7 +5,7 @@ import java.io.Serializable;
 /**
  * Information about an individual field.
  */
-public class Field implements Serializable {
+public final class Field implements Serializable {
 	static final long serialVersionUID = 1L;
 
 	/** Field name */
@@ -34,7 +34,7 @@ public class Field implements Serializable {
 	}
 
 	/** Return this field's index in the bit set */
-	public int getIndex() {
+	public final int getIndex() {
 		return index;
 	}
 }

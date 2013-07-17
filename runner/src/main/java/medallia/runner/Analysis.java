@@ -1,5 +1,12 @@
 package medallia.runner;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimaps;
 import com.google.common.io.ByteStreams;
 import medallia.sim.FieldLayoutSimulator;
 import medallia.sim.RecordLayoutSimulator;
@@ -27,6 +34,12 @@ import static medallia.util.SimulatorUtil.unused;
 public class Analysis {
 	/** Rate of records that are used for training vs total records */
 	public static final double SURVIVAL_RATE = 0.1;
+	public static final Function<Field,String> FIELD_BY_NAME = new Function<Field, String>() {
+		@Override
+		public String apply(Field field) {
+			return field.name;
+		}
+	};
 	public final long totalRows;
 	public final int totalLayouts;
 	public final int fields;
@@ -59,6 +72,8 @@ public class Analysis {
 	 * finally the total dataset size.
 	 */
 	private static Analysis analyze(final List<int[]> segments, final List<Field> fields, final DatasetLayout stats) {
+		checkFields(fields, stats);
+
 		// Non-null values in column across entire dataset
 		final long[] counts = new long[fields.size()];
 
@@ -150,6 +165,21 @@ public class Analysis {
 		);
 	}
 
+	private static void checkFields(List<Field> fields, DatasetLayout stats) {
+		final ImmutableMap<String, Field> srcFieldsByName = Maps.uniqueIndex(Arrays.asList(stats.fields), FIELD_BY_NAME);
+
+		for (Field field : fields) {
+			Field srcField = srcFieldsByName.get(field.name);
+			checkArgument(srcField != null, "Field %s is not in source data", field.name);
+			checkArgument(srcField.size == field.size, "Field %s has different size", field.name);
+			checkArgument(srcField.getIndex() == field.getIndex(), "Field %s has different index", field.name);
+		}
+		final ImmutableMap<String, Field> dstFieldsByName = Maps.uniqueIndex(fields, FIELD_BY_NAME);
+		for (Field srcField : stats.fields) {
+			checkArgument(dstFieldsByName.containsKey(srcField.name), "Field %s is in source data but not in finished layout", srcField.name);
+		}
+	}
+
 	private static long computeUsedBits(DatasetLayout stats) {
 		long usedBits = 0;
 		for (int[] segment : stats.segments) {
@@ -177,15 +207,27 @@ public class Analysis {
 		final long usedBits = computeUsedBits(stats);
 		final byte[] hash = computeHash(stats);
 
-		List<Field> fields = Arrays.asList(stats.fields);
+		List<Field> fields = ImmutableList.copyOf(Iterables.transform(Arrays.asList(stats.fields), new Function<Field, Field>() {
+			@Override
+			public Field apply(Field field) {
+				return new Field(field, field.column);
+			}
+		}));
 
-		FieldLayoutSimulator fieldLayoutSimulator = fac.createFieldLayoutSimulator(stats.layouts, fields);
+		final BitSet[] layoutCopy = stats.layouts.clone();
+		for (int i = 0; i < layoutCopy.length; i++) {
+			if (layoutCopy[i] != null) {
+				layoutCopy[i] = (BitSet) layoutCopy[i].clone();
+			}
+		}
+
+		FieldLayoutSimulator fieldLayoutSimulator = fac.createFieldLayoutSimulator(layoutCopy, fields);
 		if (fieldLayoutSimulator != null) {
 			processRecords(stats, fieldLayoutSimulator, SURVIVAL_RATE);
 			fields = fieldLayoutSimulator.getFields();
 		}
 
-		final RecordLayoutSimulator sim = fac.createRecordLayoutSimulator(stats.layouts, fields);
+		final RecordLayoutSimulator sim = fac.createRecordLayoutSimulator(layoutCopy, fields);
 
 		// Allow GC of potentially massive object
 		fieldLayoutSimulator = null;
@@ -194,7 +236,7 @@ public class Analysis {
 		processRecords(stats, sim, 1);
 		sim.flush();
 
-		final Analysis analysis = analyze(sim.getSegments(), fields, stats);
+		final Analysis analysis = analyze(ImmutableList.copyOf(sim.getSegments()), ImmutableList.copyOf(fields), stats);
 
 		// Do a sanity check
 		checkArgument(usedBits == analysis.usedBits, "Bit counts do not match");
