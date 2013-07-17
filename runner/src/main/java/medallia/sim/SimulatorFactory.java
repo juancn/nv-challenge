@@ -21,7 +21,7 @@ public interface SimulatorFactory {
 	 * returned non-null, the field layout built by the {@link medallia.sim.FieldLayoutSimulator}
 	 * will be given here.
 	 */
-	RecordLayoutSimulator createRecordLayoutSimulator(BitSet[] layouts, List<Field> fields);
+	RecordLayoutSimulator createRecordLayoutSimulator(BitSet[] layouts, List<Field> fields, DataSet dataSet);
 
 	/** @return the name of this simulator (used for reporting) */
 	String getName();

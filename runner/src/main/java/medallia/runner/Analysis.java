@@ -2,15 +2,15 @@ package medallia.runner;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimaps;
 import com.google.common.io.ByteStreams;
+import medallia.sim.DataSet;
 import medallia.sim.FieldLayoutSimulator;
 import medallia.sim.RecordLayoutSimulator;
 import medallia.sim.RecordProcessor;
+import medallia.sim.Segment;
 import medallia.sim.SimulatorFactory;
 import medallia.sim.data.DatasetLayout;
 import medallia.sim.data.Field;
@@ -116,11 +116,13 @@ public class Analysis {
 		for (int[] rows : segments) {
 			boolean[] columnUsed = new boolean[columns];
 			for (int id : rows) {
-				++layoutCounts[id];
-				BitSet bitSet = stats.layouts[id];
-				for (int i = bitSet.nextSetBit(0); i >= 0; i = bitSet.nextSetBit(i+1)) {
-					++counts[bitFieldMap[i]];
-					columnUsed[columnMap[bitFieldMap[i]]] = true;
+				if (id >= 0) {
+					++layoutCounts[id];
+					BitSet bitSet = stats.layouts[id];
+					for (int i = bitSet.nextSetBit(0); i >= 0; i = bitSet.nextSetBit(i+1)) {
+						++counts[bitFieldMap[i]];
+						columnUsed[columnMap[bitFieldMap[i]]] = true;
+					}
 				}
 				++totalRows;
 			}
@@ -184,9 +186,11 @@ public class Analysis {
 		long usedBits = 0;
 		for (int[] segment : stats.segments) {
 			for (int row : segment) {
-				BitSet layout = stats.layouts[row];
-				for (int i = layout.nextSetBit(0); i >= 0; i = layout.nextSetBit(i+1)) {
-					usedBits += stats.fields[i].size;
+				if (row >= 0) {
+					BitSet layout = stats.layouts[row];
+					for (int i = layout.nextSetBit(0); i >= 0; i = layout.nextSetBit(i+1)) {
+						usedBits += stats.fields[i].size;
+					}
 				}
 			}
 		}
@@ -197,6 +201,7 @@ public class Analysis {
 		long[] layoutCounts = new long[stats.layouts.length];
 		for (int[] layouts : stats.segments)
 			for (int idx : layouts)
+				if (idx >= 0)
 					layoutCounts[idx]++;
 		return layoutCounts;
 	}
@@ -227,19 +232,33 @@ public class Analysis {
 			fields = fieldLayoutSimulator.getFields();
 		}
 
-		final RecordLayoutSimulator sim = fac.createRecordLayoutSimulator(layoutCopy, fields);
+		final DataSet dataSet = new DataSet();
+		final RecordLayoutSimulator sim = fac.createRecordLayoutSimulator(layoutCopy, fields, dataSet);
 
 		// Allow GC of potentially massive object
 		fieldLayoutSimulator = null;
 		unused(fieldLayoutSimulator);
 
-		processRecords(stats, sim, 1);
-		sim.flush();
+		// Always use the same PRNG so results are comparable
+		for (int[] layouts : stats.segments) {
+			for (int idx : layouts) {
+				if (idx >= 0) {
+					long totalRecordCount = dataSet.getTotalRecordCount();
+					sim.processRecord(idx);
+					checkArgument(totalRecordCount+1 == dataSet.getTotalRecordCount(), "Record lost, layout index: %s", idx);
+				}
+			}
+		}
 
-		final Analysis analysis = analyze(ImmutableList.copyOf(sim.getSegments()), ImmutableList.copyOf(fields), stats);
+		final Analysis analysis = analyze(ImmutableList.copyOf(Iterables.transform(dataSet, new Function<Segment, int[]>() {
+			@Override
+			public int[] apply(Segment segment) {
+				return segment.getAllRecords();
+			}
+		})), ImmutableList.copyOf(fields), stats);
 
 		// Do a sanity check
-		checkArgument(usedBits == analysis.usedBits, "Bit counts do not match");
+		checkArgument(usedBits == analysis.usedBits, "Bit counts do not match: %s != %s", usedBits, analysis.usedBits);
 		checkArgument(Arrays.equals(layoutCounts, analysis.layoutCounts), "Layout counts do not match");
 		checkArgument(Arrays.equals(hash, computeHash(stats)), "Layout information was modified during run");
 

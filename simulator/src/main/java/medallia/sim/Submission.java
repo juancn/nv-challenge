@@ -58,34 +58,23 @@ public class Submission implements SimulatorFactory {
 	 * or {@link #flush()} is called.
 	 */
 	public static class SimpleRecordLayoutSimulator extends RecordLayoutSimulator {
-		private final RecordPacker packer = new RecordPacker(SimulatorRunner.SEGMENT_SIZE);
-
 		/**
 		 * Initialize simulator with given layout and fields.
 		 */
-		public SimpleRecordLayoutSimulator(BitSet[] layouts, List<Field> fields) {
-			super(layouts, fields);
-		}
-
-		@Override
-		public List<int[]> getSegments() {
-			return packer.getSegments();
-		}
-
-		@Override
-		public void flush() {
-			packer.flush();
+		public SimpleRecordLayoutSimulator(BitSet[] layouts, List<Field> fields, DataSet dataSet) {
+			super(layouts, fields, dataSet);
 		}
 
 		@Override
 		public void processRecord(int layoutIdx) {
-			packer.processRecord(layoutIdx);
+			// The record needs to be placed in a segment as it's processed
+			dataSet.addToLast(layoutIdx);
 		}
 	}
 
 	@Override
-	public RecordLayoutSimulator createRecordLayoutSimulator(BitSet[] layouts, List<Field> fields) {
-		return new SimpleRecordLayoutSimulator(layouts, fields);
+	public RecordLayoutSimulator createRecordLayoutSimulator(BitSet[] layouts, List<Field> fields, DataSet dataSet) {
+		return new SimpleRecordLayoutSimulator(layouts, fields, dataSet);
 	}
 
 	@Override

@@ -10,24 +10,13 @@ import java.util.List;
  * {@link SimulatorBase}.
  */
 public abstract class RecordLayoutSimulator extends SimulatorBase {
+	protected final DataSet dataSet;
+
 	/**
 	 * Initialize simulator with given layout and fields.
 	 */
-	public RecordLayoutSimulator(BitSet[] layouts, List<Field> fields) {
+	public RecordLayoutSimulator(BitSet[] layouts, List<Field> fields, DataSet dataSet) {
 		super(layouts, fields);
-	}
-
-	/**
-	 * @return Completed layout of segments
-	 */
-	public abstract List<int[]> getSegments();
-
-	/**
-	 * Flush layout. This is used to signify a publishing point during
-	 * loading (all currently {@link #processRecord(int)} records must be
-	 * visible in a call to {@link #getSegments()}) and at the end.
-	 */
-	public void flush() {
-		// Optional
+		this.dataSet = dataSet;
 	}
 }
