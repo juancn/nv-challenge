@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static medallia.util.SimulatorUtil.toSi;
 import static medallia.util.SimulatorUtil.unused;
 
@@ -150,7 +151,8 @@ public class Analysis {
 			usedColumns += columnUsedInSegments[i];
 		}
 
-		final int perSegmentCost = 40 * columns + 4096;
+		final long perSegmentCost = 40L * columns + 4096;
+		checkState(perSegmentCost > 0); // This should be impossible as long as column is an int
 		return new Analysis(
 				totalRows,
 				stats.layouts.length - 1,
