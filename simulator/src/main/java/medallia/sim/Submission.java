@@ -4,7 +4,6 @@ import com.google.common.collect.Ordering;
 import medallia.runner.SimulatorRunner;
 import medallia.sim.data.Field;
 import medallia.util.FieldPacker;
-import medallia.util.RecordPacker;
 
 import java.util.BitSet;
 import java.util.Comparator;
