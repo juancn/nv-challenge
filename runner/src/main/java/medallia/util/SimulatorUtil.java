@@ -38,15 +38,17 @@ public class SimulatorUtil {
 			bitToFieldMap[field.getIndex()] = i;
 		}
 
+		int columnCount = columnCount(fields);
+
 		final BitSet[] columnLayouts = new BitSet[fieldLayouts.length];
 		for (int i = 0; i < fieldLayouts.length; i++) {
-			columnLayouts[i] = makeClearColumnLayout(fieldLayouts[i], fields, bitToFieldMap);
+			columnLayouts[i] = makeClearColumnLayout(fieldLayouts[i], fields, bitToFieldMap, columnCount);
 		}
 		return columnLayouts;
 	}
 
 	/** Turns a used field layout into a clear column layout */
-	private static BitSet makeClearColumnLayout(BitSet fieldLayout, List<Field> fields, int[] bitToFieldMap) {
+	private static BitSet makeClearColumnLayout(BitSet fieldLayout, List<Field> fields, int[] bitToFieldMap, int columnCount) {
 		if (fieldLayout == null) return null;
 
 		// Find all used columns
@@ -56,7 +58,7 @@ public class SimulatorUtil {
 		}
 
 		// Flip it so it represents clear columns
-		columnLayout.flip(0, columnCount(fields));
+		columnLayout.flip(0, columnCount);
 		return columnLayout;
 	}
 

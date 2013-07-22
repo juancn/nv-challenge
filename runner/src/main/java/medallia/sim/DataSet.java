@@ -15,8 +15,8 @@ public final class DataSet implements Iterable<Segment> {
 
 	public long getTotalRecordCount() {
 		long total = 0;
-		for (Segment segment : segments) {
-			total += segment.getRecordCount();
+		for (int i = 0; i < segments.size(); i++) {
+			total += segments.get(i).getRecordCount();
 		}
 		return total;
 	}

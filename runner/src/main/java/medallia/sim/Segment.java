@@ -15,7 +15,7 @@ public class Segment implements Iterable<Integer> {
 	/** Next empty row */
 	private int next;
 
-	public Segment() {
+	Segment() {
 		Arrays.fill(data, -1);
 	}
 

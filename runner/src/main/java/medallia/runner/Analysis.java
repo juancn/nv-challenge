@@ -243,11 +243,14 @@ public class Analysis {
 
 		// Always use the same PRNG so results are comparable
 		for (int[] layouts : stats.segments) {
+			long totalRecordCount = dataSet.getTotalRecordCount();
+			int count = 0;
 			for (int idx : layouts) {
 				if (idx >= 0) {
-					long totalRecordCount = dataSet.getTotalRecordCount();
 					sim.processRecord(idx);
-					checkArgument(totalRecordCount+1 == dataSet.getTotalRecordCount(), "Record lost, layout index: %s", idx);
+					++count;
+					if (Math.random() < 0.05)
+						checkArgument(totalRecordCount+count == dataSet.getTotalRecordCount(), "Some records lost, you place records in segments as you process them");
 				}
 			}
 		}
