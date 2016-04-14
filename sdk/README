@@ -9,7 +9,7 @@ internal OLAP engine. Slug (which is the name of the engine) is an in-memory,
 extremely fast OLAP engine, that allows our customers to slice-and-dice their 
 data in any way they want, answering queries under a second.
  
- An OLAP engine works over discrete data cubes (hypercubes usually). Where each 
+ An OLAP engine works over discrete data cubes (hypercubes usually), where each 
 dimension of the cube is a variable, with its own data domain (i.e. range of 
 legal values).
  
@@ -41,11 +41,11 @@ for example:
     52 |  ----  |   5  
  
  Note that some data points may not contain a value across a dimension. In 
-general, from the engine point of view, all variables are nullable. Some may 
+general, from the engine's point of view, all variables are nullable. Some may 
 have a default value if not present.
  
- In practice, a cube as above would have an additional dimension that will 
-serve as a record id and makes each point unique, but we can ignore that for 
+ In practice, a cube as the one stated above would have an additional dimension that will 
+serve as a record id making each point unique, but we can ignore that for 
 now.
  
  In Slug terminology, each of the cube's dimensions is a field, which has a 
@@ -80,11 +80,11 @@ to the next power of two.
  
  For example, the space requirements for the fields of the cube defined above:
   	- age (0 to 120): needs 7 bits
- 	- gender (male or female): needs 2 bits (assuming is nullable, so 3 
+ 	  - gender (male or female): needs 2 bits (assuming is nullable, so 3 
 possible values)
- 	- overall satisfaction (1 to 5): needs 3 bits
+ 	  - overall satisfaction (1 to 5): needs 3 bits
  	
- Typical Slug cubes are much larger, some with 1000s of fields/dimensions, and 
+ Typical Slug cubes are much larger, some with thousands of fields/dimensions, and 
 millions of rows.
  
  One thing that we observe in customer datasets is that fields are added over 
@@ -134,7 +134,7 @@ significant savings.
  
  We implemented this on Slug, getting 3% to 40% memory savings on customer 
 datasets just by reordering columns (the average is around 20%). For example in 
-one large dataset it means we save close to 30GB of RAM.
+one large dataset it means we save around 30GB of RAM.
  
  The other thing we could do to make the savings better is reordering rows, so 
 as to group similar rows in the same segments, increasing the chance that a 
@@ -183,17 +183,17 @@ vary during the run).
  -----
  
  First of all, you'll need the SDK (if you're reading this from the SDK's 
-README file, I assume you already have it ;).
+README file, I assume you already have it ;) ).
  
  Go to http://challenge.medallia.com and download it and extract it.
  
  You'll need to have a recent version of Apache Maven and a recent Java SDK 
-too. If you don't have them ready, go ahead an install both.
+too. If you don't have them ready, go ahead and install both of them.
  
  Building and running
  --------------------
  
- You can build the sample simulator by doing:
+ You can build the sample simulator by:
  
  	~/eci-challenge$ mvn clean package
  
@@ -223,11 +223,11 @@ too. If you don't have them ready, go ahead an install both.
                     └── sim
                         └── Submission.java <-- submission entry point
 
- Take a peek at Submission.java, it contains a very simple (and not very good) 
+ Take a peek at `Submission.java`, it contains a very simple (and not very good) 
 implementation of a column and row packing simulator.
  
- The submission itself implements SimulatorFactory interface, used to create 
-both a RecordLayoutSimulator and a FieldLayoutSimulator.
+ The submission itself implements `SimulatorFactory` interface, used to create 
+both a `RecordLayoutSimulator` and a `FieldLayoutSimulator`.
  
  There are basic implementations of both, and several utility classes and 
 methods available to help with them.
@@ -275,10 +275,10 @@ position. This will be useful when re-arranging fields into columns.
  
  So if you want to know if field.get(42) is set in layout 5, you can do:
  
- 	layouts[5].get(field.get(42).index) 
+ 	`layouts[5].get(field.get(42).index)` 
  
  Be careful not to modify the layouts, it will be checked in the analysis phase 
-and might cause hard to track problems.
+and might cause problems which are hard to track.
  
  You can run Submission's main method from an IDE such as InteliJ IDEA or 
 Eclipse to test your submission.
@@ -320,4 +320,4 @@ laid out as specified by your algorithm.
 	classes           generated-sources maven-archiver    simulator-1.0.jar 
 	surefire
  
- Submit that jar in http://challenge.medallia.com
+ Submit that jar to http://challenge.medallia.com
